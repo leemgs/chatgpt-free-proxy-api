@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  chatgpt-proxy:
+    build: .
+    container_name: chatgpt-free-proxy
+    restart: always
+    ports:
+      - "8000:8000"
+      - "7900:7900"   # VNC 디버깅용
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    shm_size: 1gb
