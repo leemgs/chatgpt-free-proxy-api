@@ -14,6 +14,10 @@ echo "Starting Xvfb..."
 Xvfb :99 -screen 0 1280x720x24 -ac +extension RANDR &
 export DISPLAY=:99
 
+# Start x11vnc server to expose the display on port 7900 (for VNC visual control/manual login)
+echo "Starting x11vnc..."
+x11vnc -display :99 -forever -nopw -shared -rfbport 7900 -bg &
+
 # Wait a second for Xvfb to start
 sleep 2
 
