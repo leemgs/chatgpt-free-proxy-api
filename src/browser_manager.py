@@ -6,12 +6,15 @@ import logging
 from typing import AsyncGenerator
 from playwright.async_api import async_playwright
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-logger = logging.getLogger(__name__)
+import sys
+
+logger = logging.getLogger("chatgpt_proxy")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -128,9 +131,18 @@ class BrowserManager:
         try:
             logger.info("Waiting for prompt textarea...")
             try:
+                # Try to dismiss potential intro dialogs before waiting
+                try:
+                    await self.page.click('button:has-text("Okay, let\'s go")', timeout=2000)
+                    logger.info("Dismissed 'Okay, let's go' dialog.")
+                except:
+                    pass
+
                 textarea = await self.page.wait_for_selector('#prompt-textarea', timeout=20000)
             except Exception:
-                logger.warning("⚠️ Textarea not found. Trying to reload the page...")
+                logger.warning("⚠️ Textarea not found. Taking debug screenshot...")
+                await self.page.screenshot(path=os.path.join(DATA_DIR, "debug_screenshot.png"))
+                logger.info("Screenshot saved to data/debug_screenshot.png. Trying to reload the page...")
                 await self.page.reload(wait_until="domcontentloaded")
                 await asyncio.sleep(5)
                 if await self.need_login():
