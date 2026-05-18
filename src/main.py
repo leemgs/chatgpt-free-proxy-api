@@ -5,8 +5,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 
-from models import ChatCompletionRequest
-from browser_manager import browser_manager
+from .models import ChatCompletionRequest
+from .browser_manager import browser_manager
 
 load_dotenv()
 

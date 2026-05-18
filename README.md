@@ -39,7 +39,7 @@ Docker Compose를 사용하여 간편하게 서버를 빌드하고 실행합니�
 
 ```bash
 # 백그라운드 모드로 Docker 빌드 및 컨테이너 실행
-docker compose up --build -d
+docker-compose up --build -d
 ```
 > **참고**: Playwright Chromium과 내부 종속성을 함께 설치하므로 최초 빌드 시 약간의 시간이 소요될 수 있습니다.
 
