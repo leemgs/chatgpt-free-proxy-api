@@ -14,6 +14,31 @@
 - **시스템 호환성**: Ubuntu 24.04, 26.04 (X86_64) 환경 완벽 지원
 - **OpenAI 호환 API**: `/v1/chat/completions` 완벽 호환 및 Swagger UI 제공 (`/docs`)
 
+## 🏗️ 시스템 동작 구조 (Architecture)
+
+본 시스템은 외부에서 OpenAI API 표준 규격으로 들어오는 요청을 가로채어, 실제 ChatGPT 웹페이지를 Playwright로 조종하여 응답을 스크래핑해 반환하는 방식으로 동작합니다.
+
+```mermaid
+sequenceDiagram
+    participant Client as Client (cURL / App)
+    participant FastAPI as FastAPI Server
+    participant Playwright as Playwright (Browser)
+    participant ChatGPT as chatgpt.com
+
+    Client->>FastAPI: POST /v1/chat/completions
+    FastAPI->>Playwright: send_message_and_stream(prompt)
+    
+    rect rgb(30, 30, 30)
+    Note over Playwright,ChatGPT: Headless Browser Automation
+    Playwright->>ChatGPT: DOM 검색 (#prompt-textarea)
+    Playwright->>ChatGPT: 프롬프트 입력 및 전송
+    ChatGPT-->>Playwright: 실시간 텍스트 생성 (Streaming)
+    end
+    
+    Playwright-->>FastAPI: AsyncGenerator (Chunk 단위 반환)
+    FastAPI-->>Client: Server-Sent Events (SSE) 응답 반환
+```
+
 ## 🚀 Getting Started (시작하기)
 
 ### 1. 설치 및 환경 설정
