@@ -45,15 +45,35 @@ class BrowserManager:
             args=launch_args,
             ignore_default_args=["--enable-automation"],
             viewport={"width": 1280, "height": 720},
-            user_agent="Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
             locale="ko-KR",
             timezone_id="Asia/Seoul",
         )
 
         logger.info("Applying stealth scripts...")
         await self.context.add_init_script("""
+            // Overwrite the webdriver property
             Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            
+            // Mock languages
+            Object.defineProperty(navigator, 'languages', {get: () => ['ko-KR', 'ko', 'en-US', 'en']});
+            
+            // Mock plugins
             Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
+            
+            // Mock WebGL Vendor and Renderer (highly critical for headless detection bypass)
+            const getParameter = WebGLRenderingContext.prototype.getParameter;
+            WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                // UNMASKED_VENDOR_WEBGL
+                if (parameter === 37445) {
+                    return 'Intel Open Source Technology Center';
+                }
+                // UNMASKED_RENDERER_WEBGL
+                if (parameter === 37446) {
+                    return 'Mesa DRI Intel(R) HD Graphics 520 (Skylake GT2)';
+                }
+                return getParameter(parameter);
+            };
         """)
 
         # launch_persistent_context creates a default page
@@ -80,8 +100,12 @@ class BrowserManager:
         }""")
 
     async def need_login(self):
+        current_url = self.page.url
+        logger.info(f"Checking if login is required. Current URL: {current_url}")
+        if "auth/login" in current_url:
+            return True
         try:
-            await self.page.wait_for_selector('button[data-testid="login-button"]', timeout=7000)
+            await self.page.wait_for_selector('button[data-testid="login-button"], button[data-testid="login"], button:has-text("Log in"), button:has-text("로그인")', timeout=7000)
             return True
         except:
             return False
@@ -95,7 +119,8 @@ class BrowserManager:
 
         try:
             logger.info("🔑 Trying auto login...")
-            await self.page.click('button[data-testid="login-button"]')
+            login_selector = 'button[data-testid="login-button"], button[data-testid="login"], button:has-text("Log in"), button:has-text("로그인")'
+            await self.page.click(login_selector)
             await asyncio.sleep(4)
             
             logger.info("Entering email...")
@@ -112,7 +137,14 @@ class BrowserManager:
             
             logger.info("✅ Auto login successful")
         except Exception as e:
+            current_url = self.page.url
+            current_title = await self.page.title()
             logger.error(f"❌ Auto login failed: {e}")
+            logger.error(f"❌ Failure URL: {current_url}")
+            logger.error(f"❌ Failure Title: {current_title}")
+            screenshot_path = os.path.join(DATA_DIR, "login_failed_screenshot.png")
+            await self.page.screenshot(path=screenshot_path)
+            logger.info(f"Saved failure screenshot to {screenshot_path}")
 
     async def human_delay(self, min_sec=0.7, max_sec=2.3):
         await asyncio.sleep(random.uniform(min_sec, max_sec))
