@@ -140,9 +140,22 @@ class BrowserManager:
 
                 textarea = await self.page.wait_for_selector('#prompt-textarea', timeout=20000)
             except Exception:
-                logger.warning("⚠️ Textarea not found. Taking debug screenshot...")
-                await self.page.screenshot(path=os.path.join(DATA_DIR, "debug_screenshot.png"))
-                logger.info("Screenshot saved to data/debug_screenshot.png. Trying to reload the page...")
+                current_url = self.page.url
+                current_title = await self.page.title()
+                logger.error(f"⚠️ Textarea not found. Current URL: {current_url}")
+                logger.error(f"⚠️ Page Title: {current_title}")
+                
+                # Check for common Cloudflare or Auth barriers
+                if "challenge" in current_url.lower() or await self.page.query_selector('iframe[src*="cloudflare"]'):
+                    logger.error("🛑 Cloudflare challenge detected! The headless browser is blocked.")
+                elif await self.page.query_selector('button[data-testid="login-button"]'):
+                    logger.error("🛑 Not logged in. The login button is visible on the page.")
+
+                logger.warning("Taking debug screenshot...")
+                screenshot_path = os.path.join(DATA_DIR, "debug_screenshot.png")
+                await self.page.screenshot(path=screenshot_path)
+                logger.info(f"Screenshot saved to {screenshot_path}. Trying to reload the page...")
+                
                 await self.page.reload(wait_until="domcontentloaded")
                 await asyncio.sleep(5)
                 if await self.need_login():
