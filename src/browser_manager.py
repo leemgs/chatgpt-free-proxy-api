@@ -27,14 +27,11 @@ class BrowserManager:
             "--window-size=1280,720",
         ]
 
-        self.browser = await playwright.chromium.launch(
+        self.context = await playwright.chromium.launch_persistent_context(
+            user_data_dir=os.path.join(DATA_DIR, "browser"),
             headless=os.getenv("HEADLESS", "true").lower() == "true",
             args=launch_args,
-            ignore_default_args=["--enable-automation"]
-        )
-
-        self.context = await self.browser.new_context(
-            user_data_dir=os.path.join(DATA_DIR, "browser"),
+            ignore_default_args=["--enable-automation"],
             viewport={"width": 1280, "height": 720},
             user_agent="Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
             locale="ko-KR",
@@ -46,7 +43,8 @@ class BrowserManager:
             Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
         """)
 
-        self.page = await self.context.new_page()
+        # launch_persistent_context creates a default page
+        self.page = self.context.pages[0]
         await self.stealth_page()
 
         await self.page.goto("https://chatgpt.com", wait_until="domcontentloaded")
