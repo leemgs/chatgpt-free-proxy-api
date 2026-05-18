@@ -36,6 +36,14 @@ async def chat_completions(request: ChatCompletionRequest):
     else:
         full_response = ""
         async for chunk in browser_manager.send_message_and_stream(prompt):
+            if "error" in chunk:
+                try:
+                    data = json.loads(chunk.split("data: ")[1])
+                    if "error" in data:
+                        raise HTTPException(500, detail=data["error"])
+                except Exception as e:
+                    pass
+
             if "content" in chunk:
                 try:
                     data = json.loads(chunk.split("data: ")[1])
