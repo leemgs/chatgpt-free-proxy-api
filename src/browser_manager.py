@@ -170,7 +170,7 @@ class BrowserManager:
                 except:
                     pass
 
-                textarea = await self.page.wait_for_selector('#prompt-textarea', timeout=20000)
+                textarea = await self.page.wait_for_selector('#prompt-textarea, [contenteditable="true"]', timeout=20000)
             except Exception:
                 current_url = self.page.url
                 current_title = await self.page.title()
@@ -193,7 +193,7 @@ class BrowserManager:
                 if await self.need_login():
                     logger.info("Session expired or logged out. Re-initiating login.")
                     await self.auto_login()
-                textarea = await self.page.wait_for_selector('#prompt-textarea', timeout=20000)
+                textarea = await self.page.wait_for_selector('#prompt-textarea, [contenteditable="true"]', timeout=20000)
 
             logger.info("Inputting user prompt...")
             await textarea.fill(prompt)
