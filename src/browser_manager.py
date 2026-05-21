@@ -84,6 +84,8 @@ class BrowserManager:
         await self.page.goto("https://chatgpt.com", wait_until="domcontentloaded")
         await asyncio.sleep(random.uniform(4, 7))
 
+        await self.bypass_cloudflare()
+
         if await self.need_login():
             logger.info("Login required. Initiating auto-login sequence.")
             await self.auto_login()
@@ -98,6 +100,27 @@ class BrowserManager:
             delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
             delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
         }""")
+
+    async def bypass_cloudflare(self):
+        current_title = await self.page.title()
+        if "기다리십시오" in current_title or "Just a moment" in current_title:
+            logger.info("Cloudflare challenge detected by page title. Attempting bypass...")
+        try:
+            iframe = await self.page.wait_for_selector('iframe[src*="turnstile"], iframe[src*="cloudflare"]', timeout=3000)
+            if iframe:
+                logger.info("Found Cloudflare iframe, attempting to click...")
+                await asyncio.sleep(random.uniform(1, 2))
+                box = await iframe.bounding_box()
+                if box:
+                    x = box["x"] + box["width"] / 2
+                    y = box["y"] + box["height"] / 2
+                    await self.page.mouse.move(x, y, steps=10)
+                    await asyncio.sleep(random.uniform(0.5, 1))
+                    await self.page.mouse.click(x, y)
+                    logger.info("Clicked Cloudflare Turnstile.")
+                    await asyncio.sleep(random.uniform(3, 5))
+        except:
+            pass
 
     async def need_login(self):
         current_url = self.page.url
@@ -190,6 +213,8 @@ class BrowserManager:
                 
                 await self.page.reload(wait_until="domcontentloaded")
                 await asyncio.sleep(5)
+                await self.bypass_cloudflare()
+                
                 if await self.need_login():
                     logger.info("Session expired or logged out. Re-initiating login.")
                     await self.auto_login()
