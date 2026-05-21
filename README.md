@@ -96,3 +96,19 @@ curl -X POST http://localhost:8005/v1/chat/completions \
     "stream": true
   }'
 ```
+
+---
+
+## 🛠️ 트러블슈팅 (Troubleshooting)
+
+### Cloudflare "잠시만 기다리십시오..." (Turnstile) 화면에서 멈출 경우
+현재 환경(IP, Headless Browser)이 OpenAI 쪽 봇 방지 시스템에 차단된 경우, 프롬프트 입력창을 찾지 못하고 타임아웃(`Timeout 20000ms exceeded`)이 발생할 수 있습니다.
+이 경우, 브라우저에 직접 접속하여 캡차(사람인지 확인)를 수동으로 한 번 풀어주면 문제가 해결됩니다.
+
+**수동 우회 방법 (VNC 사용):**
+1. **VNC Viewer**(TigerVNC, RealVNC 등) 프로그램을 설치합니다.
+2. VNC 주소에 `127.0.0.1:7900`을 입력하고 연결합니다 (비밀번호 없음).
+3. Docker 컨테이너 내부에서 실행 중인 Chromium 화면이 표시됩니다.
+4. 화면에 나타난 Cloudflare "사람인지 확인" 체크박스를 마우스로 **직접 한 번 클릭**해 줍니다.
+5. ChatGPT 프롬프트 화면으로 넘어가는 것을 확인한 후 VNC를 종료합니다.
+6. 완료 후, 발급된 세션과 쿠키가 볼륨에 저장되므로 이후에는 정상적으로 API 호출이 가능합니다.
